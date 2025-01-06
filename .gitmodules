@@ -1,0 +1,3 @@
+[submodule "assn_thread"]
+	path = assn_thread
+	url = https://github.com/sudharsan-kp-2598/siva-pm/tree/thread_feature
