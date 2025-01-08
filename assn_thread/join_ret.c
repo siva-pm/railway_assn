@@ -7,8 +7,9 @@
 void* roll_dice(){
     int* resu= malloc(sizeof(int)); 
     *resu = (rand() % 6) +1;
-    printf("%d\n", *resu);
-    return (void*) resu; //int* returned, void* type casted
+    printf("will return %d on address %p \n", *resu,resu);
+    //return (void*) resu; //int* returned, void* type casted
+    pthread_exit((void*)resu); //usage of pthread_exit fn instead of return
 }
 
 int main(){
@@ -21,6 +22,8 @@ int main(){
     if(pthread_join(th,(void**) &res)!=0){ //return value got from roll_dice as int*, void** type casted to int*
         return 2;
     }
+    //pthread_exit(0);               //terminates the program but lets all thread end first
+    printf("returned value is %d on address %p \n",*res,res);
     free(res); //deallocate memory
     return 0;
 }
