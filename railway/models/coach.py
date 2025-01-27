@@ -29,7 +29,7 @@ class Coach(Generic[P]):
         return self._coach_type
 
     def find_empty_seat(self) -> bool:          #helper fn to get an empty seat_number
-        for seat_number in self._total_seats:  
+        for seat_number in self._seat.keys():  
             if self._seat[seat_number] is None: 
                 self.seat_number = seat_number  
                 return True 
@@ -38,7 +38,7 @@ class Coach(Generic[P]):
     def book_seat(self) ->  Optional[Tuple[int,str]]:        #gets the seat number as input and marks the seat booked
         try:     
             if not self.find_empty_seat():   #if no empty seat found
-                return 0
+                return None
               
             while(True):                                #get user input for a passenger while booking
                 try:
@@ -46,6 +46,8 @@ class Coach(Generic[P]):
                     age = int(input("Enter Age: "))
                     gender = input("Enter Gender (Male/Female): ")
                     contact = input("Enter Contact Number: ")
+                    if age <= 0:
+                        raise ValueError("Age must be a positive integer.")
                     if not name.strip():
                         raise ValueError("Name cannot be empty.")
                     if gender.lower() not in {"male", "female"}:

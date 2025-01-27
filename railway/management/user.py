@@ -1,39 +1,42 @@
 from models.ticket import TrainTicket
 from services.booking_service import book_seat, cancel_booking
-from models.train import Train
-from management.admin import Admin
-import uuid
+from .admin import Admin
+from typing import Optional
 class Users:    # """Class to represent individual user details."""
    
     def __init__(self, user_id: str, name: str, contact: str):
-        self.user_id = user_id
-        self.name = name
-        self.contact = contact
-        self.ticket_list: list[TrainTicket] = []  # Stores tickets for the user
+        self._user_id = user_id
+        self._name = name
+        self._contact = contact
+        self._ticket_list: list[TrainTicket] = []  # Stores tickets for the user
 
     def __str__(self) -> str:   # """String representation of the Users class."""
        
         return f"User ID: {self.user_id}\nName: {self.name}\nContact: {self.contact}"
 
     def add_ticket(self, new_ticket: TrainTicket) -> None:  # """Adds a ticket to the user's ticket list."""
-        self.ticket_list.append(new_ticket)
+        self._ticket_list.append(new_ticket)
         print(f"Ticket with PNR {new_ticket.pnr} added to user {self.name}'s ticket list.")
 
     def remove_ticket(self, seat_number:int, coach_id:str, train_id:str) -> None: # """Removes a ticket from the user's ticket list."""
-        for ticket in self.ticket_list:
+        for ticket in self._ticket_list:
             if ticket.seat_number == seat_number and ticket.coach_id == coach_id and ticket.train_id == train_id:
-                self.ticket_list.remove(ticket)
+                self._ticket_list.remove(ticket)
                 print(f"Ticket with PNR {ticket.pnr} removed from user {self.name}'s ticket list.")
                 return
         print(f"No ticket found for user {self.name} with seat number {seat_number} in coach {coach_id}.")
 
     def display_tickets(self) -> None:  # """Displays all tickets for the user."""
-        if not self.ticket_list:
+        if not self._ticket_list:
             print(f"No tickets found for user {self.name}.")
         else:
             print(f"Tickets for {self.name}:")
-            for ticket in self.ticket_list:
+            for ticket in self._ticket_list:
                 print(f"PNR: {ticket.pnr}, Train: {ticket.train_name}, Seat: {ticket.seat_number}")
+
+    def update_profile(self) -> bool:  # """Updates a user's profile contact."""
+        new_contact = input("Enter new contact number: ")
+        self._contact = new_contact
 
 class UserManagement:   # """Class to manage user registration and login."""
     
@@ -46,7 +49,10 @@ class UserManagement:   # """Class to manage user registration and login."""
         users_str = "\n".join(f"User ID: {user.user_id}, Name: {user.name}" for user in self.users.values())
         return f"Registered Users:\n{users_str}"
 
-    def register_user(self, user_id: str, name: str, contact: str) -> bool: # """Registers a new user."""
+    def register_user(self) -> bool: # """Registers a new user."""
+        user_id = input("Enter User ID: ")
+        name = input("Enter Name: ")
+        contact = input("Enter Contact: ") 
         if user_id in self.users:
             print(f"User {user_id} already exists.")
             return False
@@ -61,16 +67,8 @@ class UserManagement:   # """Class to manage user registration and login."""
         print("Invalid user ID!")
         return False
 
-    def update_profile(self, user_id: str, contact: str) -> bool:  # """Updates a user's profile contact."""
-        if user_id in self.users:
-            self.users[user_id].contact = contact
-            print(f"User {self.users[user_id].name}'s profile updated successfully.")
-            return True
-        print("User not found!")
-        return False
-
 def user_cli(admin: Admin,user_management: UserManagement): # """User command-line interface."""
-    logged_in_user = None
+    logged_in_user:Optional[Users] = None
 
     while True:
         if not logged_in_user:
@@ -82,10 +80,7 @@ def user_cli(admin: Admin,user_management: UserManagement): # """User command-li
             choice = input("Enter your choice: ")
 
             if choice == "1":
-                user_id = input("Enter User ID: ")
-                name = input("Enter Name: ")
-                contact = input("Enter Contact: ")
-                user_management.register_user(user_id, name, contact)
+                user_management.register_user()
 
             elif choice == "2":
                 user_id = input("Enter User ID: ")
@@ -111,34 +106,25 @@ def user_cli(admin: Admin,user_management: UserManagement): # """User command-li
 
             if choice == "1":
                 train_id = input("Enter Train ID: ")
-                booking_result = book_seat(train_id,admin)
+                booking_result = book_seat(train_id,admin,logged_in_user)
                 if booking_result:
                     ticket=booking_result
-                    logged_in_user.add_ticket(ticket)
-                    print(f"Booking successful! Seat {seat_number} in Coach {coach_id}")
+                    print(f"Booking successful! seat number is {ticket.seat_number} in coach {ticket.coach_id}")
                 else:
                     print("Booking failed. Please try again.")
 
             elif choice == "2":
-                try:
-                    train_id = input("Enter Train ID: ")
-                    coach_id = input("Enter Coach ID: ")
-                    seat_number = int(input("Enter Seat Number: "))
-                    cancel_status = cancel_booking(seat_number, coach_id, train_id,admin)
-                    if cancel_status:
-                        print("Cancellation successful.")
-                        logged_in_user.remove_ticket(seat_number, coach_id, train_id)
-                    else:
-                        print("Cancellation failed. Please try again.")
-
-                except ValueError:
-                    print("Invalid input. Please enter correct details.")
+                cancel_status = cancel_booking(train_id,admin,logged_in_user)
+                if cancel_status:
+                    print("Cancellation successful.")
+                else:
+                    print("Cancellation failed. Please try again.")
 
             elif choice == "3":
                 train_id = input("Enter Train ID: ")
-                train = admin.get_train(train_id)
+                my_train = admin.get_train(train_id)
                 print("\nTrain Schedule:")
-                train.display_schedule()
+                my_train.display_schedule()
 
             elif choice == "4":
                 print("\nUser Tickets:")
@@ -149,6 +135,9 @@ def user_cli(admin: Admin,user_management: UserManagement): # """User command-li
                 admin.list_trains()
 
             elif choice == "6":
+                logged_in_user.update_profile()
+
+            elif choice == "7":
                 print("Logging out...")
                 logged_in_user = None
 

@@ -1,9 +1,7 @@
 from typing import TypeVar,Generic,Dict
 from models.train import Train
-from models.coach import Coach
 
 T = TypeVar('T', bound=Train)
-
 class Admin(Generic[T]):
     def __init__(self):
         self._trains: Dict[str, T] = {}
@@ -12,12 +10,16 @@ class Admin(Generic[T]):
     def get_train(self,train_id:str) -> T:
         return self._trains[train_id]
 
-    def add_train(self, train: T) -> None:
-        """Adds a train to the system."""
+    def add_train(self) -> None:    #adds a new train
+        
         try:
-            # Ensure the train ID is unique
-            if train.train_id in self._trains:
-                raise ValueError(f"Train with ID '{train.train_id}' already exists.")
+            train_id = input("Enter Train ID: ")
+            if train_id in self._trains:
+                raise ValueError(f"Train with ID '{train_id}' already exists.")
+            name = input("Enter Train Name: ")
+            route_start = input("Enter Route Start: ")
+            route_end = input("Enter Route End: ")
+            train = Train(train_id=train_id, name=name, route=(route_start, route_end), coach={})
             
             # Add the train to the dictionary
             self._trains[train.train_id] = train
@@ -28,24 +30,26 @@ class Admin(Generic[T]):
         except Exception as e:
             print(f"An unexpected error occurred while adding the train: {e}")
 
-    def remove_train(self, train_id: str) -> None:
-        """Removes a train from the system."""
+    def remove_train(self, train_id: str) -> None:  #removes a train
         try:
             # Ensure the train exists in the system
             if train_id not in self._trains:
                 raise KeyError(f"Train with ID '{train_id}' does not exist.")
             
-            # Remove the train
-            del self._trains[train_id]
-            print(f"Train with ID '{train_id}' removed successfully.")
+            if self._trains[train_id].available_tickets() < self._trains[train_id].total_tickets:
+                choice=input("Warning! Some tickets have been booked. Do you still want to remove the train? (y/n): ")
+                if choice.lower() != 'y':
+                    del self._trains[train_id]
+                    print(f"Train with ID '{train_id}' removed successfully.")
+                else:
+                    print("Operation cancelled.")
         
         except KeyError as ke:
             print(f"KeyError: {ke}")
         except Exception as e:
             print(f"An unexpected error occurred while removing the train: {e}")
 
-    def list_trains(self) -> None:
-        """Displays all trains in the system."""
+    def list_trains(self) -> None:  #lists all trains
         if not self._trains:
             print("No trains available.")
         else:
@@ -53,7 +57,11 @@ class Admin(Generic[T]):
             for train_id, train in self._trains.items():
                 print(f"Train ID: {train.train_id}, Train Name: {train.name}, Route: {train.route[0]} -> {train.route[1]}")
 
-def admin_cli(admin: Admin[Train]):
+def admin_cli(admin: Admin[Train]) -> None:  # Admin command-line interface.
+    password = input("Enter Admin Password: ")
+    if password != "admin":
+        print("Incorrect password.")
+        return
     while True:
         print("\nAdmin Management Menu")
         print("1. Add Train")
@@ -65,17 +73,13 @@ def admin_cli(admin: Admin[Train]):
         print("7. Add Coach")
         print("8. Remove Coach")
         print("9. View Available Tickets")
-        print("10. Exit")
+        print("10. View Passengers details")
+        print("11. Exit")
 
-        choice = input("Enter your choice: ")
+        choice:int = input("Enter your choice: ")
 
         if choice == "1":
-            train_id = input("Enter Train ID: ")
-            name = input("Enter Train Name: ")
-            route_start = input("Enter Route Start: ")
-            route_end = input("Enter Route End: ")
-            train = Train(train_id=train_id, name=name, route=(route_start, route_end), coach={})
-            admin.add_train(train)
+            admin.add_train()
 
         elif choice == "2":
             train_id = input("Enter Train ID to remove: ")
@@ -86,55 +90,64 @@ def admin_cli(admin: Admin[Train]):
 
         elif choice == "4":
             train_id = input("Enter Train ID: ")
-            if train_id in admin._trains:
-                print(admin._trains[train_id])
+            my_train=admin.get_train(train_id)
+            if my_train:
+                print(my_train)
             else:
                 print(f"Train with ID '{train_id}' not found.")
 
         elif choice == "5":
             train_id = input("Enter Train ID: ")
-            if train_id in admin._trains:
-                station = input("Enter Station Name: ")
-                arrival = input("Enter Arrival Time: ")
-                departure = input("Enter Departure Time: ")
-                admin._trains[train_id].update_schedule({station: [arrival, departure]})
+            my_train=admin.get_train(train_id)
+            if my_train:
+                my_train.update_schedule()
             else:
                 print(f"Train with ID '{train_id}' not found.")
 
         elif choice == "6":
             train_id = input("Enter Train ID: ")
-            if train_id in admin._trains:
-                admin._trains[train_id].display_schedule()
+            my_train=admin.get_train(train_id)
+            if my_train:
+                my_train.display_schedule()
             else:
                 print(f"Train with ID '{train_id}' not found.")
 
         elif choice == "7":
             train_id = input("Enter Train ID: ")
-            if train_id in admin._trains:
-                coach_id = input("Enter Coach ID: ")
-                total_seats = int(input("Enter Total Seats: "))
-                coach_type = input("Enter Coach Type: ")
-                new_coach = {coach_id: Coach(coach_id=coach_id, total_seats=total_seats, coach_type=coach_type)}
-                admin._trains[train_id].add_coach(new_coach)
+            my_train=admin.get_train(train_id)
+            if my_train:
+                my_train.add_coach()
             else:
                 print(f"Train with ID '{train_id}' not found.")
 
         elif choice == "8":
             train_id = input("Enter Train ID: ")
-            if train_id in admin._trains:
+            my_train=admin.get_train(train_id)
+            if my_train:
                 coach_id = input("Enter Coach ID to remove: ")
-                admin._trains[train_id].remove_coach(coach_id)
+                my_train.remove_coach(coach_id)
             else:
                 print(f"Train with ID '{train_id}' not found.")
 
         elif choice == "9":
             train_id = input("Enter Train ID: ")
-            if train_id in admin._trains:
-                admin._trains[train_id].available_tickets()
+            my_train=admin.get_train(train_id)
+            if my_train:
+                for coach_id, available_seats in my_train.available_tickets_by_coach():
+                    print(f"Coach ID: {coach_id}, Available Seats: {available_seats}")
             else:
                 print(f"Train with ID '{train_id}' not found.")
 
         elif choice == "10":
+            train_id = input("Enter Train ID: ")
+            my_train=admin.get_train(train_id)
+            if my_train:
+                for pnr_id, passenger_name in my_train.get_passenger_details():
+                    print(f"PNR ID: {pnr_id}, Passenger Name: {passenger_name}")
+            else:
+                print(f"Train with ID '{train_id}' not found.")
+
+        elif choice == "11":
             print("Exiting the application. Goodbye!")
             break
 

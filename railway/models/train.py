@@ -1,40 +1,24 @@
-from typing import List, Dict,TypeVar,Generic
+from typing import Dict,TypeVar,Generic,Tuple
 from .coach import Coach
 
 C = TypeVar('C', bound=Coach)
 
 class Train(Generic[C]):
-    def __init__(self, train_id: str, name: str, route: tuple[str,str], coach: Dict[str,Coach]):
+    def __init__(self, train_id: str, name: str, route: tuple[str,str]):
         self._train_id = train_id
         self._train_name = name
         self._route = route
-        self._schedule: Dict[str, List[str]]= {}  # Station-wise schedule
-        self._coach = coach  # dictionary of coach objects with key as coach number
+        self._schedule: Dict[str, Tuple[str]]= {}  # Station-wise schedule
+        self._coach:Dict[str,Coach] = {} # dictionary of coach objects with key as coach number
 
     def __str__(self):
         return (
             f"Train ID: {self._train_id}\n"
-            f"Name: {self._name}\n"
+            f"Name: {self._train_name}\n"
             f"Route: {self._route[0]} -> {self._route[1]}\n"
             f"Number of Coaches: {len(self._coach)}\n"
             f"Total Passengers: {len(self.get_passenger_list())}"
         )
-
-    @property
-    def train_id(self) -> str:
-        return self._train_id
-
-    @property
-    def name(self) -> str:
-        return self._train_name
-
-    @property
-    def coach(self) -> Dict[str,C]:
-        return self._coach
-
-    @property
-    def route(self) -> tuple[str,str]:
-        return self._route
 
     def display_schedule(self):         #prints station, arrival time and departure time
         if not self._schedule:
@@ -46,20 +30,16 @@ class Train(Generic[C]):
         except Exception as e:
             print(f"display schedule error{e}")
 
-    def update_schedule(self, new_schedule: Dict[str, List[str]]):      #updates the existing schedule
+    def update_schedule(self):      #updates the existing schedule
         try:
-            # Check if the input schedule is a dictionary and if each station has a list of two items (arrival and departure times)
-            if not isinstance(new_schedule, dict):
-                raise ValueError("The schedule must be a dictionary.")
+            station = input("Enter Station Name: ")
+            arrival = input("Enter Arrival Time: ")
+            departure = input("Enter Departure Time: ")
+            if not station or not arrival or not departure:
+                raise ValueError("All fields (station, arrival, and departure) must be filled.")
             
-            for station, timings in new_schedule.items():
-                # Ensure each station has a valid timing list (a list of two items: arrival and departure time)
-                if not isinstance(timings, list) or len(timings) != 2:
-                    raise ValueError(f"Timings for station {station} should be a list with two items (arrival and departure).")
-                
-                # If everything checks out, update the schedule
-                self._schedule[station] = timings
-            
+            new_schedule:Dict[str,Tuple[str]] = {station: (arrival, departure)}            
+            self._schedule.update(new_schedule)
             print("Schedule updated successfully!")
         
         except ValueError as ve:
@@ -68,38 +48,35 @@ class Train(Generic[C]):
             print(f"An error occurred while updating the schedule: {e}")
            
     def get_passenger_list(self) -> Dict[int,str]:      # return a dict, key= pnr id, value= passenger name
-        passenger_info={}
-
-        for coach_id, coach in self._coach.tems():
-            for seat_no, passenger in coach._seat.items():
-                if passenger is not None:
-                    passenger_info.append({
-                        "passenger_id": passenger.PNR_id,
-                        "name": passenger.name
-                        })
-        
-        return passenger_info
-         
-    def add_coach(self, new_coach: Dict[str, C]):       #appends a new coach in existing coach dict
         try:
-            # Check if new_coach is a dictionary
-            if not isinstance(new_coach, dict):
-                raise ValueError("The new coach data must be provided as a dictionary.")
-
-            # Check for duplicate keys
-            duplicate_coaches = set(new_coach.keys()) & set(self._coach.keys())
-            if duplicate_coaches:
-                raise ValueError(f"Duplicate coach IDs detected: {duplicate_coaches}. Each coach must have a unique ID.")
-
-            # Add new coaches to the existing dictionary
+            passenger_info={}
+            for coach_id, coach in self._coach.items():
+                for seat_no, passenger in coach._seat.items():
+                    if passenger is not None:
+                        passenger_info[passenger.PNR_id] = passenger.name
+            
+            return passenger_info
+        except Exception as e:
+            print(f"Error fetching passenger list: {e}")
+            return {}
+             
+    def add_coach(self):       #adds new coach in existing coach dict
+        try:
+            coach_id = input("Enter Coach ID: ")
+            if coach_id in self._coach:
+                raise ValueError(f"Coach with ID '{coach_id}' already exists.")
+            total_seats = int(input("Enter Total Seats: "))
+            coach_type = input("Enter Coach Type: ")
+            
+            new_coach:Dict[str,Coach] = {coach_id: Coach(coach_id=coach_id, total_seats=total_seats, coach_type=coach_type)}
             self._coach.update(new_coach)
-            print("Coaches added successfully!")
+            print(f"Coach with ID '{coach_id}' added successfully!")
         
         except ValueError as ve:
             print(f"ValueError: {ve}")
         except Exception as e:
-            print(f"An unexpected error occurred while adding coaches: {e}")
-
+            print(f"An unexpected error occurred while adding the coach: {e}")
+        
     def remove_coach(self, coach_id: str):          #removes an exsiting coach entry
         try:    
             # Check if the coach ID exists
@@ -120,58 +97,13 @@ class Train(Generic[C]):
         print(f"Total available tickets: {total_tickets}")
         return total_tickets
 
-def main():
-    # Example train and coaches (static initialization for demonstration)
-    coach_a = Coach(coach_id="A1", total_seats=72, coach_type="Sleeper")
-    coach_b = Coach(coach_id="B1", total_seats=48, coach_type="AC")
-    coaches: Dict[str, Coach] = {"A1": coach_a, "B1": coach_b}
+    def available_tickets_by_coach(self) -> Tuple[str,int]:        #returns available tickets by coach
+        available_ticket_by_coach = [(coach.coach_id, coach.available_seats) for coach in self._coach.values()]
+        print(f"Available tickets by coach: {available_ticket_by_coach}")
+        return available_ticket_by_coach
 
-    train = Train(train_id="12345", name="Express", route=("CityA", "CityB"), coach=coaches)
+    def total_tickets(self) -> int:         #returns total tickets in the train
+        total_tickets = sum(coach.total_seats for coach in self._coach.values())
+        print(f"Total tickets: {total_tickets}")
+        return total_tickets
 
-    while True:
-        print("\nTrain Management Menu")
-        print("1. View Train Details")
-        print("2. Update Train Schedule")
-        print("3. Display Train Schedule")
-        print("4. Add Coach")
-        print("5. Remove Coach")
-        print("6. View Available Tickets")
-        print("7. Exit")
-
-        choice = input("Enter your choice: ")
-
-        if choice == "1":
-            print(train)
-
-        elif choice == "2":
-            station = input("Enter Station Name: ")
-            arrival = input("Enter Arrival Time: ")
-            departure = input("Enter Departure Time: ")
-            train.update_schedule({station: [arrival, departure]})
-
-        elif choice == "3":
-            train.display_schedule()
-
-        elif choice == "4":
-            coach_id = input("Enter Coach ID: ")
-            total_seats = int(input("Enter Total Seats: "))
-            coach_type = input("Enter Coach Type: ")
-            new_coach = {coach_id: Coach(coach_id=coach_id, total_seats=total_seats, coach_type=coach_type)}
-            train.add_coach(new_coach)
-
-        elif choice == "5":
-            coach_id = input("Enter Coach ID to remove: ")
-            train.remove_coach(coach_id)
-
-        elif choice == "6":
-            train.available_tickets()
-
-        elif choice == "7":
-            print("Exiting the application. Goodbye!")
-            break
-
-        else:
-            print("Invalid option. Please try again.")
-
-if __name__ == "__main__":
-    main()
