@@ -1,4 +1,4 @@
-from typing import Dict,TypeVar,Generic,Optional
+from typing import Dict,TypeVar,Generic,Optional,Tuple
 from .passenger import Passenger
 
 P = TypeVar('P', bound=Passenger)
@@ -27,10 +27,6 @@ class Coach(Generic[P]):
     @property
     def coach_type(self) -> str:
         return self._coach_type
-    
-    @property
-    def seat(self) -> Dict[int,bool]:
-        return self._seat
 
     def find_empty_seat(self) -> bool:          #helper fn to get an empty seat_number
         for seat_number in self._total_seats:  
@@ -39,14 +35,13 @@ class Coach(Generic[P]):
                 return True 
         return False  
 
-    def book_seat(self) ->  int:        #gets the seat number as input and marks the seat booked
+    def book_seat(self) ->  Optional[Tuple[int,str]]:        #gets the seat number as input and marks the seat booked
         try:     
             if not self.find_empty_seat():   #if no empty seat found
                 return 0
               
             while(True):                                #get user input for a passenger while booking
                 try:
-                    pnr_id = int(input("Enter Passenger PNR ID: "))
                     name = input("Enter Passenger Name: ")
                     age = int(input("Enter Age: "))
                     gender = input("Enter Gender (Male/Female): ")
@@ -60,15 +55,15 @@ class Coach(Generic[P]):
                     break
                 except ValueError as e:
                     print(f"Invalid input: {e}. Please enter correct details.")
-                    
-            self._seat[self.seat_number] = Passenger(pnr_id, name, age, gender, contact)
+                
+            self._seat[self.seat_number] = Passenger(name, age, gender, contact)
             self._available_seats = max(0, self._available_seats - 1)  # Ensure it doesn't go below 0
             print(f"Seat {self.seat_number} successfully booked")
-            return self.seat_number
+            return self.seat_number, name
         
         except Exception as e:
             print(f"An unexpected error occurred while booking seat {self.seat_number}: {e}")
-            return 0
+            return None
    
     def cancel_booking(self,seat_number: int) -> bool:    #gets the seat number as input and deletes the seat
         try:

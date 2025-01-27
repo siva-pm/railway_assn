@@ -1,12 +1,16 @@
 from models.train import Train
 from models.coach import Coach
+from management.admin import Admin, admin_cli
+from management.user import UserManagement, user_cli
 from services.booking_service import book_seat, cancel_booking
-from storage.data_storage import DataStorage
+#from storage.data_storage import DataStorage
 from typing import Dict
 
 # Initialize shared data storage
-data_storage = DataStorage()
+# data_storage = DataStorage()
 
+admin = Admin[Train]()
+user_management = UserManagement()
 # Example train and coaches (static initialization for demonstration)
 coach_a = Coach(coach_id="A1", total_seats=72, coach_type="Sleeper")
 coach_b = Coach(coach_id="B1", total_seats=48, coach_type="AC")
@@ -14,12 +18,23 @@ coaches: Dict[str, Coach] = {"A1": coach_a, "B1": coach_b}
 
 train = Train(train_id="12345", name="Express", route=("CityA", "CityB"), coach=coaches)
 
-
 def main():
     print("Welcome to the Railway Booking System!")
 
     while True:
         print("\nMain Menu")
+        print("1. Admin access") 
+        print("2. User access")
+        print("3. Exit")
+
+        choice_1 = input("Enter your choice: ")
+
+        if choice_1 == "1":
+            admin_cli(admin)
+
+        elif choice_1 == "2":
+            user_cli(train)
+
         print("1. Book a Ticket")
         print("2. Cancel a Ticket")
         print("3. View Train Schedule")
@@ -72,7 +87,6 @@ def main():
 
         else:
             print("Invalid option. Please try again.")
-
 
 if __name__ == "__main__":
     main()

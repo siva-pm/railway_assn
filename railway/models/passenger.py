@@ -1,6 +1,5 @@
 class Passenger:
-    def __init__(self, pnr_id: int, name: str, age: int, gender: str, contact: str):
-        self.PNR_id = pnr_id
+    def __init__(self, name: str, age: int, gender: str, contact: str):
         self.name = name
         self.age = age
         self.gender = gender
@@ -15,14 +14,3 @@ class Passenger:
         f"Contact: {self.contact}"
         )
 
-    def add_passenger(self):
-        # Get user input for passenger details
-        try:
-            pnr_id = int(input("Enter Passenger PNR ID: "))
-            name = input("Enter Passenger Name: ")
-            age = int(input("Enter Age: "))
-            gender = input("Enter Gender (Male/Female): ")
-            contact = input("Enter Contact Number: ")
-        except ValueError:
-            print("Invalid input. Please enter correct details.")
-            return

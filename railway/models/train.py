@@ -119,3 +119,59 @@ class Train(Generic[C]):
         total_tickets = sum(coach.available_seats for coach in self._coach.values())
         print(f"Total available tickets: {total_tickets}")
         return total_tickets
+
+def main():
+    # Example train and coaches (static initialization for demonstration)
+    coach_a = Coach(coach_id="A1", total_seats=72, coach_type="Sleeper")
+    coach_b = Coach(coach_id="B1", total_seats=48, coach_type="AC")
+    coaches: Dict[str, Coach] = {"A1": coach_a, "B1": coach_b}
+
+    train = Train(train_id="12345", name="Express", route=("CityA", "CityB"), coach=coaches)
+
+    while True:
+        print("\nTrain Management Menu")
+        print("1. View Train Details")
+        print("2. Update Train Schedule")
+        print("3. Display Train Schedule")
+        print("4. Add Coach")
+        print("5. Remove Coach")
+        print("6. View Available Tickets")
+        print("7. Exit")
+
+        choice = input("Enter your choice: ")
+
+        if choice == "1":
+            print(train)
+
+        elif choice == "2":
+            station = input("Enter Station Name: ")
+            arrival = input("Enter Arrival Time: ")
+            departure = input("Enter Departure Time: ")
+            train.update_schedule({station: [arrival, departure]})
+
+        elif choice == "3":
+            train.display_schedule()
+
+        elif choice == "4":
+            coach_id = input("Enter Coach ID: ")
+            total_seats = int(input("Enter Total Seats: "))
+            coach_type = input("Enter Coach Type: ")
+            new_coach = {coach_id: Coach(coach_id=coach_id, total_seats=total_seats, coach_type=coach_type)}
+            train.add_coach(new_coach)
+
+        elif choice == "5":
+            coach_id = input("Enter Coach ID to remove: ")
+            train.remove_coach(coach_id)
+
+        elif choice == "6":
+            train.available_tickets()
+
+        elif choice == "7":
+            print("Exiting the application. Goodbye!")
+            break
+
+        else:
+            print("Invalid option. Please try again.")
+
+if __name__ == "__main__":
+    main()
