@@ -1,0 +1,12 @@
+{
+    "T1": {
+        "train_id": "T1",
+        "train_name": "Express",
+        "route": [
+            "Station1",
+            "Station2"
+        ],
+        "schedule": {},
+        "coaches": {}
+    }
+}

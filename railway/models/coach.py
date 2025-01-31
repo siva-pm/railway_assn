@@ -1,16 +1,29 @@
-from typing import Dict,TypeVar,Generic,Optional,Tuple
+from typing import Dict, TypeVar, Generic, Optional, Tuple
+from abc import ABC, abstractmethod
 from .passenger import Passenger
 
 P = TypeVar('P', bound=Passenger)
 
-class Coach(Generic[P]):
+class Coach_Model(ABC, Generic[P]):
+    @abstractmethod
+    def find_empty_seat(self) -> Optional[int]:
+        pass
+
+    @abstractmethod
+    def book_seat(self) -> Optional[Tuple[int, str]]:
+        pass
+
+    @abstractmethod
+    def cancel_booking(self, seat_number: int) -> bool:
+        pass
+
+class Coach(Coach_Model[P]):
     def __init__(self, coach_id: str, total_seats: int, coach_type: str):
         self._coach_id = coach_id
         self._total_seats = total_seats
         self._available_seats = total_seats
         self._coach_type = coach_type
-        self._seat: Dict[int,Optional[Passenger]]={i: None for i in range(1,self._total_seats+1)}
-        self.seat_number :int =0
+        self._seat: Dict[int, Optional[P]] = {i: None for i in range(1, self._total_seats + 1)}
 
     @property
     def coach_id(self) -> str:
@@ -28,66 +41,67 @@ class Coach(Generic[P]):
     def coach_type(self) -> str:
         return self._coach_type
 
-    def find_empty_seat(self) -> bool:          #helper fn to get an empty seat_number
-        for seat_number in self._seat.keys():  
-            if self._seat[seat_number] is None: 
-                self.seat_number = seat_number  
-                return True 
-        return False  
-
-    def book_seat(self) ->  Optional[Tuple[int,str]]:        #gets the seat number as input and marks the seat booked
-        try:     
-            if not self.find_empty_seat():   #if no empty seat found
-                return None
-              
-            while(True):                                #get user input for a passenger while booking
-                try:
-                    name = input("Enter Passenger Name: ")
-                    age = int(input("Enter Age: "))
-                    gender = input("Enter Gender (Male/Female): ")
-                    contact = input("Enter Contact Number: ")
-                    if age <= 0:
-                        raise ValueError("Age must be a positive integer.")
-                    if not name.strip():
-                        raise ValueError("Name cannot be empty.")
-                    if gender.lower() not in {"male", "female"}:
-                        raise ValueError("Gender must be 'Male' or 'Female'.")
-                    if not contact.isdigit() or len(contact) != 10:
-                        raise ValueError("Contact number must be a valid 10-digit number.")
-                    break
-                except ValueError as e:
-                    print(f"Invalid input: {e}. Please enter correct details.")
-                
-            self._seat[self.seat_number] = Passenger(name, age, gender, contact)
-            self._available_seats = max(0, self._available_seats - 1)  # Ensure it doesn't go below 0
-            print(f"Seat {self.seat_number} successfully booked")
-            return self.seat_number, name
-        
-        except Exception as e:
-            print(f"An unexpected error occurred while booking seat {self.seat_number}: {e}")
-            return None
-   
-    def cancel_booking(self,seat_number: int) -> bool:    #gets the seat number as input and deletes the seat
+    def find_empty_seat(self) -> Optional[int]:
         try:
-            if seat_number in self._seat:
-                if self._seat[seat_number]:
-                    self._seat[seat_number]= None
-                    self._available_seats+=1
-                    print(f"Seat {seat_number} successfully cancelled")        
-                    return True
-                else:
-                    print(f"Seat {seat_number} already vacant")
-                    return False
-            else:
-                print(f"Invalid seat number {seat_number}/n")
-                return False
-        except KeyError:
-            print(f"KeyError: Seat number {seat_number} not found in the seat map.")
-            return False
-        except TypeError as e:
-            print(f"TypeError: Invalid input for seat number. Error details: {e}")
-            return False
+            for seat_number, passenger in self._seat.items():
+                if passenger is None:
+                    return seat_number
         except Exception as e:
-            print(f"Unexpected error occurred while canceling booking for seat {seat_number}: {e}")
+            print(f"An error occured while finding an empty seat: {e}")
+        return None
+
+    def book_seat(self) -> Optional[Tuple[int, str]]:
+        try:
+            seat_number = self.find_empty_seat()
+            if seat_number is None:
+                print("No empty seats available.")
+                return None
+            
+            name = input("Enter Passenger Name: ").strip()
+            age = int(input("Enter Age: ").strip())
+            gender = input("Enter Gender (Male/Female): ").strip().lower()
+            contact = input("Enter Contact Number: ").strip()
+
+            if age <= 0 or not name.strip() or gender.lower() not in {"male", "female"} or not contact.isdigit() or len(contact) != 10:
+                raise ValueError("Invalid input data.")
+
+            self._seat[seat_number] = Passenger(name, age, gender, contact)
+            self._available_seats -= 1
+            print(f"Seat {seat_number} successfully booked.")
+            return seat_number, name
+        except ValueError as ve:
+            print(f"Invalid input: {ve}. Please enter correct details.")
+        except Exception as e:
+            print(f"Unknown error occurred while booking seat {e}")
+        return None  
+
+    def cancel_booking(self, seat_number: int) -> bool:
+        try:
+            if seat_number not in self._seat:
+                print(f"Invalid seat number {seat_number}.")
+                return False
+
+            if self._seat[seat_number] is None:
+                print(f"Seat {seat_number} is already vacant.")
+                return False
+
+            self._seat[seat_number] = None
+            self._available_seats += 1
+            print(f"Seat {seat_number} successfully cancelled.")
+            return True
+        except Exception as e:
+            print(f"Error occured while cancelling seat {e}")
             return False
 
+class LadiesCoach(Coach_Model[P]):
+    def find_empty_seat(self) -> Optional[int]:
+        print("Ladies Coach")
+        return super().find_empty_seat()
+
+    def book_seat(self) -> Optional[Tuple[int, str]]:
+        print("Ladies Coach")
+        return super().book_seat()
+
+    def cancel_booking(self, seat_number: int) -> bool:
+        print("Ladies Coach")
+        return super().cancel_booking(seat_number)
