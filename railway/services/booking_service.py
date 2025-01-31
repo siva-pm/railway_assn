@@ -13,7 +13,7 @@ def book_seat(admin,user) -> Optional[TrainTicket]:
             return None
 
         if train.available_tickets()>0:    
-            for coach_id, coach in train.coach.items():
+            for coach_id, coach in train._coach.items():
                 if coach.available_seats>0:  
                     seat_number,name = coach.book_seat() #books a seat and returns the seat_number 
                     if seat_number:
@@ -21,7 +21,7 @@ def book_seat(admin,user) -> Optional[TrainTicket]:
                         payment_status = PaymentService.process_payment(seat_number)
                         if payment_status:
                             print("Payment processed successfully!")
-                            ticket=TrainTicket(pnr=uuid.uuid4(), passenger_name=name,train_name=train.name,seat_number=seat_number,journey_date="2022-12-31",booking_status="Booked")
+                            ticket=TrainTicket(pnr_id=uuid.uuid4(), passenger_name=name,train_number=train.name,coach_number=coach_id,seat_number=seat_number,journey_date="2022-12-31",booking_status="Booked")
                             user.add_ticket(ticket)
                             return ticket 
                         else:
@@ -39,7 +39,7 @@ def book_seat(admin,user) -> Optional[TrainTicket]:
 
 def cancel_booking(admin,user) -> bool:
     try:
-        train_id = input("Enter Train ID: ").split()
+        train_id = input("Enter Train ID: ").strip().upper()
         if train_id not in admin._trains:
             print(f"No such train with train id {train_id}")
             return False

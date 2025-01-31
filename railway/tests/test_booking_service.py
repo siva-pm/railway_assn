@@ -19,7 +19,7 @@ def setup_admin():
     coach.book_seat.return_value = (42, "John Doe")  
     coach.cancel_booking.return_value = True  
 
-    train.coach = {"C1": coach} 
+    train._coach = {"C1": coach} 
     admin._trains = {"T1": train}  
     
     return admin, train, coach
@@ -30,7 +30,7 @@ def setup_user():
     return user
 
 # ---------- TEST CASES ----------
-@patch("builtins.input", side_effect=["T1"])  
+@patch("builtins.input", side_effect=["T1", "C1", "John Doe", "30", "Male", "1234567890"])  
 @patch("services.payment_service.PaymentService.process_payment", return_value=True) 
 def test_book_seat_success(mock_payment, mock_input, setup_admin, setup_user):
     admin, train, coach = setup_admin
@@ -73,3 +73,71 @@ def test_cancel_booking_already_vacant(mock_refund, mock_input, setup_admin, set
     assert result is False
     coach.cancel_booking.assert_called_once_with(42)
     mock_refund.assert_not_called()
+
+@patch("builtins.input", side_effect=["T1", "C1", "John Doe", "30", "Male", "1234567890"])  
+@patch("services.payment_service.PaymentService.process_payment", return_value=False) 
+def test_book_seat_payment_failure(mock_payment, mock_input, setup_admin, setup_user):
+    admin, train, coach = setup_admin
+    user = setup_user
+
+    ticket = book_seat(admin, user)
+
+    assert ticket is None
+    coach.book_seat.assert_called_once()
+    mock_payment.assert_called_once()
+    coach.cancel_booking.assert_called_once()
+
+@patch("builtins.input", side_effect=["invalid_train_id", "C1", "John Doe", "30", "Male", "1234567890"])  
+def test_book_seat_invalid_train_id(mock_input, setup_admin, setup_user):
+    admin, train, coach = setup_admin
+    user = setup_user
+
+    ticket = book_seat(admin, user)
+
+    assert ticket is None
+
+@patch("builtins.input", side_effect=["T1", "C1", "John Doe", "30", "Male", "1234567890"])  
+def test_book_seat_no_available_seats(mock_input, setup_admin, setup_user):
+    admin, train, coach = setup_admin
+    user = setup_user
+
+    coach.available_seats = 0
+
+    ticket = book_seat(admin, user)
+
+    assert ticket is None
+
+@patch("builtins.input", side_effect=["T1", "C1", "42"])  
+@patch("services.payment_service.PaymentService.process_refund", return_value=False)  
+def test_cancel_booking_refund_failure(mock_refund, mock_input, setup_admin, setup_user):
+    admin, train, coach = setup_admin
+    user = setup_user
+
+    result = cancel_booking(admin, user)
+
+    assert result is False
+    coach.cancel_booking.assert_called_once_with(42)
+    user.remove_ticket.assert_called_once_with(42, "C1", "T1")
+    mock_refund.assert_called_once()
+
+@patch("builtins.input", side_effect=["T1", "invalid_coach", "42"])  
+def test_cancel_booking_invalid_coach_id(mock_input, setup_admin, setup_user):
+    admin, train, coach = setup_admin
+    user = setup_user
+
+    result = cancel_booking(admin, user)
+
+    assert result is False
+    coach.cancel_booking.assert_not_called()
+    user.remove_ticket.assert_not_called()
+
+@patch("builtins.input", side_effect=["T1", "C1", "invalid_seat"])  
+def test_cancel_booking_invalid_seat_number(mock_input, setup_admin, setup_user):
+    admin, train, coach = setup_admin
+    user = setup_user
+
+    result = cancel_booking(admin, user)
+
+    assert result is False
+    coach.cancel_booking.assert_not_called()
+    user.remove_ticket.assert_not_called()
