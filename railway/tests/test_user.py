@@ -46,20 +46,13 @@ def test_login_invalid_user(mock_input, setup_user_management):
     user = user_management.login()
     assert user is None
 
-def test_add_ticket(setup_user):
-    user = setup_user
-    ticket = TrainTicket(1, "John Doe", "T1", "C1", 1, "2022-12-31")
-    user.add_ticket(ticket)
-    assert ticket in user._ticket_list
-
 def test_remove_ticket(setup_user):
     user = setup_user
-    ticket = TrainTicket(1, "John Doe", "T1", "C1", 1, "2022-12-31")
-    result_add= user.add_ticket(ticket)
+    result_add= user.add_ticket("John Doe","T1","C1",1)
     result = user.remove_ticket(1, "C1", "T1")
     assert result_add is True
     assert result is True
-    assert ticket not in user._ticket_list
+    assert user._ticket_list == []
 
 def test_remove_nonexistent_ticket(setup_user):
     user = setup_user
@@ -68,14 +61,30 @@ def test_remove_nonexistent_ticket(setup_user):
 
 def test_display_tickets(setup_user):
     user = setup_user
-    ticket = TrainTicket(1, "John Doe", "T1", "C1", 1, "2022-12-31")
-    user.add_ticket(ticket)
+    user.add_ticket("John Doe","T1","C1",1)
     with patch('builtins.print') as mocked_print:
         user.display_tickets()
-        mocked_print.assert_called_with(f"PNR: {ticket.PNR_id}, Train: {ticket.train_number}, Seat: {ticket.seat_number}")
+        mocked_print.assert_called_with(f"PNR: {user._ticket_list[0].PNR_id}, Train: {user._ticket_list[0].train_number}, Seat: {user._ticket_list[0].seat_number}, Coach: {user._ticket_list[0].coach_number}")
 
 @patch('builtins.input', side_effect=["0987654321"])
 def test_update_profile(mock_input, setup_user):
     user = setup_user
     user.update_profile()
     assert user.contact == "0987654321"
+
+def test_add_ticket_success(setup_user):
+    user = setup_user
+    result = user.add_ticket("John Doe", "T1", "C1", 1)
+    assert result is True
+    assert len(user._ticket_list) == 1
+    assert user._ticket_list[0].passenger_name == "John Doe"
+    assert user._ticket_list[0].train_number == "T1"
+    assert user._ticket_list[0].coach_number == "C1"
+    assert user._ticket_list[0].seat_number == "1"
+
+def test_add_ticket_failure(setup_user):
+    user = setup_user
+    with patch('uuid.uuid4', side_effect=Exception("UUID generation failed")):
+        result = user.add_ticket("John Doe", "T1", "C1", 1)
+    assert result is False
+    assert len(user._ticket_list) == 0

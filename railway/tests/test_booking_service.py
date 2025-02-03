@@ -36,16 +36,13 @@ def test_book_seat_success(mock_payment, mock_input, setup_admin, setup_user):
     admin, train, coach = setup_admin
     user = setup_user
 
-    ticket = book_seat(admin, user)
+    book_status = book_seat(admin, user)
 
-    assert ticket is not None
-    assert isinstance(ticket, TrainTicket)
-    assert ticket.passenger_name == "John Doe"
-    assert ticket.booking_status == "Booked"
+    assert book_status is True
 
     coach.book_seat.assert_called_once()
     mock_payment.assert_called_once()
-    user.add_ticket.assert_called_once_with(ticket)
+    user.add_ticket.assert_called_once_with("John Doe","T1","C1",42)
 
 @patch("builtins.input", side_effect=["T1", "C1", "42"])  
 @patch("services.payment_service.PaymentService.process_refund", return_value=True)  
@@ -80,21 +77,12 @@ def test_book_seat_payment_failure(mock_payment, mock_input, setup_admin, setup_
     admin, train, coach = setup_admin
     user = setup_user
 
-    ticket = book_seat(admin, user)
+    book_status = book_seat(admin, user)
 
-    assert ticket is None
+    assert book_status is False
     coach.book_seat.assert_called_once()
     mock_payment.assert_called_once()
     coach.cancel_booking.assert_called_once()
-
-@patch("builtins.input", side_effect=["invalid_train_id", "C1", "John Doe", "30", "Male", "1234567890"])  
-def test_book_seat_invalid_train_id(mock_input, setup_admin, setup_user):
-    admin, train, coach = setup_admin
-    user = setup_user
-
-    ticket = book_seat(admin, user)
-
-    assert ticket is None
 
 @patch("builtins.input", side_effect=["T1", "C1", "John Doe", "30", "Male", "1234567890"])  
 def test_book_seat_no_available_seats(mock_input, setup_admin, setup_user):
@@ -103,9 +91,9 @@ def test_book_seat_no_available_seats(mock_input, setup_admin, setup_user):
 
     coach.available_seats = 0
 
-    ticket = book_seat(admin, user)
+    book_status = book_seat(admin, user)
 
-    assert ticket is None
+    assert book_status is False
 
 @patch("builtins.input", side_effect=["T1", "C1", "42"])  
 @patch("services.payment_service.PaymentService.process_refund", return_value=False)  

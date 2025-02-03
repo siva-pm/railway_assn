@@ -1,9 +1,10 @@
 import os
-import time
 from models.ticket import TrainTicket
 from services.booking_service import book_seat, cancel_booking
 from .admin import Admin
 from typing import Optional
+from time import sleep
+import uuid
 
 class Users:
     def __init__(self, user_id: str, name: str, contact: str):
@@ -27,10 +28,12 @@ class Users:
     def __str__(self) -> str:
         return f"User ID: {self.user_id}\nName: {self.name}\nContact: {self.contact}"
 
-    def add_ticket(self, new_ticket: TrainTicket) -> bool:
+    def add_ticket(self, passenger_name:str, train_id:str, coach_id:str, seat_number:int) -> bool:
         try:
-            self._ticket_list.append(new_ticket)
-            print(f"Ticket with PNR {new_ticket.PNR_id} added to user {self.name}'s ticket list.")
+            unique_int = int(uuid.uuid4().int % (10**18))
+            ticket=TrainTicket(pnr_id=unique_int, passenger_name=passenger_name,train_number=train_id,coach_number=coach_id,seat_number=str(seat_number),journey_date="2022-12-31",booking_status="Booked")
+            self._ticket_list.append(ticket)
+            print(f"Ticket with PNR {ticket.PNR_id} added to user {self.name}'s ticket list.")
             return True
         except Exception as e:
             print(f"Error while adding ticket: {e}")
@@ -39,10 +42,19 @@ class Users:
     def remove_ticket(self, seat_number:int, coach_id:str, train_id:str) -> bool:
         try:
             for ticket in self._ticket_list:
-                if ticket.seat_number == seat_number and ticket.coach_number == coach_id and ticket.train_number == train_id:
-                    self._ticket_list.remove(ticket)
-                    print(f"Ticket with PNR {ticket.PNR_id} removed from user {self.name}'s ticket list.")
-                    return True
+                if (str(ticket.seat_number) == str(seat_number)): 
+                    if (ticket.coach_number.upper() == coach_id.upper()):
+                        if (ticket.train_number.upper() == train_id.upper()):
+                            self._ticket_list.remove(ticket)
+                            print(f"Ticket with PNR {ticket.PNR_id} removed from user {self.name}'s ticket list.")
+                            return True
+                        else:
+                            print(f"No ticket found, train number mismatch")
+                    else:
+                        print(f"No ticket found, coach number mismatch")
+                else:
+                    print(f"No ticket found, seat number mismatch")
+
             print(f"No ticket found for user {self.name} with seat number {seat_number} in coach {coach_id}.")
             return False
         except Exception as e:
@@ -57,7 +69,7 @@ class Users:
             else:
                 print(f"Tickets for {self.name}:")
                 for ticket in self._ticket_list:
-                    print(f"PNR: {ticket.PNR_id}, Train: {ticket.train_number}, Seat: {ticket.seat_number}")
+                    print(f"PNR: {ticket.PNR_id}, Train: {ticket.train_number}, Seat: {ticket.seat_number}, Coach: {ticket.coach_number}")
                 return True
         except Exception as e:
             print(f"Error while displaying tickets: {e}")
@@ -139,7 +151,6 @@ def user_cli(admin: Admin, user_management: UserManagement):
     logged_in_user: Optional[Users] = None
     
     while True:
-        time.sleep(0.5)
         os.system("clear")
         try:
             if not logged_in_user:
@@ -167,8 +178,7 @@ def user_cli(admin: Admin, user_management: UserManagement):
                 else:
                     print("Invalid option. Please try again.")
                 
-                input("Press Enter to continue...")
-                os.system("clear")
+                # input("Press Enter to continue...")
             
             else:
                 print("\nUser Menu")
@@ -182,12 +192,12 @@ def user_cli(admin: Admin, user_management: UserManagement):
                 choice = input("Enter your choice: ")
                 
                 if choice == "1":
-                    ticket = book_seat(admin, logged_in_user)
-                    if ticket:
-                        print(f"Booking successful! seat number is {ticket.seat_number} in coach {ticket.coach_id}")
+                    book_status = book_seat(admin, logged_in_user)
+                    if book_status:
+                        print(f"Booking successful!!")
                     else:
                         print("Booking failed. Please try again.")
-                
+                    
                 elif choice == "2":
                     cancel_status = cancel_booking(admin, logged_in_user)
                     if cancel_status:
@@ -209,8 +219,9 @@ def user_cli(admin: Admin, user_management: UserManagement):
                     logged_in_user = None
                
                 else:
-                    print("Invalid option. Please try again.")
-                input("Press enter to continue...")
+                    print("Invalid option. Please try again.")  
+
+            input("Press enter to continue...")
 
         except Exception as e:
             print(f"Unexpected error: {e}")

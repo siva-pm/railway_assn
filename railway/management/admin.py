@@ -79,7 +79,6 @@ class Admin(Generic[T]):
             print(f"Unexpected error: {e}")
         return False
         
-
     def list_trains(self) -> bool:
         try:
             if not self._trains:
@@ -142,19 +141,29 @@ def admin_cli(admin: Admin[Train]) -> None:
                 print(admin.get_train())
 
             elif choice == "5":
-                admin.get_train().update_schedule()
+                train=admin.get_train()
+                if train:
+                    train.update_schedule()
 
             elif choice == "6":
-               admin.get_train().display_schedule()
+                train=admin.get_train()
+                if train:
+                    train.display_schedule()
 
             elif choice == "7":
-                admin.get_train().add_coach()
+                train=admin.get_train()
+                if train:
+                    train.add_coach()
 
             elif choice == "8":
-                admin.get_train().remove_coach()
+                train=admin.get_train()
+                if train:
+                    train.remove_coach()
 
             elif choice == "9":
-                admin.get_train().display_coaches()
+                train=admin.get_train()
+                if train:
+                    train.display_coaches()
 
             elif choice == "10":
                 try:
@@ -165,7 +174,9 @@ def admin_cli(admin: Admin[Train]) -> None:
                     print(f"Error at showing available seats: {e}")
 
             elif choice == "11":
-                admin.get_train().get_passenger_list()
+                train=admin.get_train()
+                if train:
+                    train.get_passenger_list()
                
             elif choice == "12":
                 print("Exiting the application. Goodbye!")

@@ -191,6 +191,7 @@ def test_save_train_data_with_coach(data_storage, admin, sample_passenger):
         assert coach_data["total_seats"] == 100
         assert coach_data["seats"]["1"]["name"] == "John Doe"
 
+# ---------- TRAIN DATA LOADING TESTS ----------
 def test_load_train_data(data_storage):
     """Test loading train data with full configuration"""
     mock_data = {
@@ -237,7 +238,6 @@ def test_load_train_data(data_storage):
     ]
 )
 def test_load_train_data_errors(data_storage, error, expected):
-    """Test error handling during train data loading"""
     with patch('builtins.open') as mocked_file:
         if isinstance(error, json.JSONDecodeError):
             mocked_file.return_value.__enter__.return_value.read.return_value = "invalid json"
@@ -246,3 +246,9 @@ def test_load_train_data_errors(data_storage, error, expected):
         
         trains = data_storage.load_train_data()
         assert trains == expected
+
+def test_load_train_data_empty(data_storage):
+    with patch('builtins.open', mock_open(read_data="{}")):
+        trains = data_storage.load_train_data()
+        assert trains == {}
+

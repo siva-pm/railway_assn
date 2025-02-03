@@ -68,7 +68,7 @@ class Train(Generic[C]):
             for coach_id, coach in self._coach.items():
                 for seat_no, passenger in coach._seat.items():
                     if passenger is not None:
-                        passenger_info[passenger.PNR_id] = passenger.name
+                        passenger_info[coach_id] = passenger.name
 
             if not passenger_info:
                 print("No Passengers in this train")

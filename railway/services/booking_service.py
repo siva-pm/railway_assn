@@ -1,41 +1,37 @@
-from models.ticket import TrainTicket
 from .payment_service import PaymentService
-from typing import Optional
-import uuid
 
-def book_seat(admin,user) -> Optional[TrainTicket]:
+def book_seat(admin,user) -> bool:
     try:
         train_id = input("Enter Train ID: ").strip()
-        if admin._trains[train_id]:
-            train=admin._trains[train_id]
-        else:
+        if train_id not in admin._trains:
             print(f"No such train with train id {train_id}")
-            return None
+            return False
+        
+        train=admin._trains[train_id]
 
         if train.available_tickets()>0:    
             for coach_id, coach in train._coach.items():
                 if coach.available_seats>0:  
-                    seat_number,name = coach.book_seat() #books a seat and returns the seat_number 
+                    seat_number,passenger_name = coach.book_seat() #books a seat and returns the seat_number 
                     if seat_number:
                         print(f"Seat {seat_number} booked successfully in coach {coach_id}!")
                         payment_status = PaymentService.process_payment(seat_number)
                         if payment_status:
                             print("Payment processed successfully!")
-                            ticket=TrainTicket(pnr_id=uuid.uuid4(), passenger_name=name,train_number=train.name,coach_number=coach_id,seat_number=seat_number,journey_date="2022-12-31",booking_status="Booked")
-                            user.add_ticket(ticket)
-                            return ticket 
+                            user.add_ticket(passenger_name,train_id,coach_id,seat_number)
+                            return True 
                         else:
                             print("Payment failed. Booking will be canceled.")
                             coach.cancel_booking(seat_number) 
-                            return None   
+                            return False   
                     else:
                         print(f"No available seat in coach {coach_id}. Checking next coach.")
     except Exception as e:
         print(f"An error occurred during booking: {e}")
-        return None
+        return False
                 
     print("No available seats in any coach. Please try again later.")
-    return None
+    return False
 
 def cancel_booking(admin,user) -> bool:
     try:
@@ -52,8 +48,13 @@ def cancel_booking(admin,user) -> bool:
             return False
 
         coach = train._coach[coach_id]
-          
-        seat_number = int(input("Enter Seat Number: ").strip())
+        
+        try:  
+            seat_number = int(input("Enter Seat Number: ").strip())
+        except ValueError as ve:
+            print(f"Invalid seat number")
+            return False
+        
         cancellation_status = coach.cancel_booking(seat_number)
 
         if cancellation_status:
